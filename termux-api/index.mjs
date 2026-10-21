@@ -61,6 +61,7 @@ let reconnectAttempts = 0
 let reconnectTimer
 let groupRefreshTimer
 let periodicGroupRefreshTimer
+let contactsPersistTimer
 let groupRefreshInFlight
 let lastGroupRefreshAt = 0
 let groupsInMemory = new Map()
@@ -272,7 +273,7 @@ const simplifyGroup = (metadata, accountContact, timestamp) => ({
 	updatedAt: timestamp
 })
 
-const saveContacts = async contacts => {
+const saveContacts = async (contacts, { persist = true } = {}) => {
 	if (!Array.isArray(contacts) || contacts.length === 0) return 0
 	const timestamp = new Date().toISOString()
 	const rows = contacts.flatMap(contact => {
@@ -311,8 +312,17 @@ const saveContacts = async contacts => {
 		database.run('ROLLBACK')
 		throw error
 	}
-	await persistDatabase()
+	if (persist) await persistDatabase()
 	return rows.length
+}
+
+const scheduleContactsPersist = () => {
+	clearTimeout(contactsPersistTimer)
+	contactsPersistTimer = setTimeout(() => {
+		contactsPersistTimer = undefined
+		void persistDatabase().catch(error => logger.warn({ err: error }, 'Could not persist contact changes'))
+	}, 1_500)
+	contactsPersistTimer.unref?.()
 }
 
 const textFromMessage = message => {
@@ -873,10 +883,12 @@ const connect = async () => {
 	currentSocket.ev.on('groups.update', () => scheduleGroupRefresh(5_000))
 	currentSocket.ev.on('group-participants.update', () => scheduleGroupRefresh(5_000))
 	currentSocket.ev.on('contacts.upsert', contacts => {
-		void saveContacts(contacts).catch(error => logger.warn({ err: error }, 'Could not persist contacts'))
+		void saveContacts(contacts, { persist: false }).then(count => { if (count) scheduleContactsPersist() })
+			.catch(error => logger.warn({ err: error }, 'Could not persist contacts'))
 	})
 	currentSocket.ev.on('contacts.update', contacts => {
-		void saveContacts(contacts).catch(error => logger.warn({ err: error }, 'Could not update contacts'))
+		void saveContacts(contacts, { persist: false }).then(count => { if (count) scheduleContactsPersist() })
+			.catch(error => logger.warn({ err: error }, 'Could not update contacts'))
 	})
 	currentSocket.ev.on('messages.upsert', upsert => rememberIncomingMessages(upsert))
 }
@@ -887,11 +899,16 @@ const shutdown = async signal => {
 	connectionState = 'stopping'
 	clearTimeout(reconnectTimer)
 	clearTimeout(groupRefreshTimer)
+	clearTimeout(contactsPersistTimer)
 	clearInterval(periodicGroupRefreshTimer)
 	logger.info({ signal }, 'Shutting down Termux API')
 	const activeSocket = socket
 	socket = undefined
 	if (activeSocket) await activeSocket.end(undefined).catch(() => {})
+	if (contactsPersistTimer) {
+		contactsPersistTimer = undefined
+		await persistDatabase().catch(error => logger.error({ err: error }, 'Could not flush contact changes'))
+	}
 	await databaseWriteQueue.catch(() => {})
 	await new Promise(resolve => apiServer.close(() => resolve()))
 	await lockHandle?.close()
