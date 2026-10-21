@@ -2,7 +2,7 @@
 
 Esta é uma cópia editável do código-fonte de [WhiskeySockets/Baileys](https://github.com/WhiskeySockets/Baileys), criada a partir do commit `0af2386292907f7d9742d8d41f830d8c48208fa1` da branch `master`. A branch local `minha-versao` está pronta para receber suas mudanças. O histórico Git foi clonado de forma rasa (`--depth 1`); todos os arquivos da versão selecionada estão presentes.
 
-A biblioteca continua com o nome interno `baileys` e a versão `7.0.0-rc14` para preservar os imports e o build originais. A única mudança de configuração é `.gitattributes`, que mantém os arquivos de código em LF no Windows para o lint funcionar após um novo clone. Nenhuma regra de conexão ou protocolo foi alterada sem um requisito específico.
+A biblioteca continua com o nome interno `baileys` e a versão `7.0.0-rc14` para preservar os imports e o build originais. Acrescentei `termux-api/`, uma API HTTP para Termux com reconexão progressiva, consulta/exportação de grupos, pesquisa/exportação de contatos, seleção explícita de mensagens recentes, SQLite com cópia de segurança, histórico limitado de operações e autenticação por token. `.gitattributes` também mantém os arquivos de código em LF no Windows. O protocolo central do Baileys não foi alterado.
 
 ## O que existe no projeto
 
@@ -14,6 +14,7 @@ A biblioteca continua com o nome interno `baileys` e a versão `7.0.0-rc14` para
 | `src/Types/` | Tipos públicos da API. |
 | `src/WABinary/` e `src/WAUSync/` | Codificação binária e consultas USync. |
 | `src/Defaults/` | Configurações e constantes padrão. |
+| `termux-api/` | Serviço HTTP local para Termux, persistência SQLite e instruções de operação. |
 | `WAProto/` | Definições e código gerado de protobuf. |
 | `Example/example.ts` | Exemplo oficial de conexão e eventos. |
 | `src/__tests__/` | Testes unitários, de integração e testes e2e separados. |
@@ -52,10 +53,13 @@ Para experimentar a conexão, rode `yarn example` e acompanhe o código em `Exam
 
 Se o objetivo for um bot ou uma integração específica, o caminho recomendado pelo próprio projeto é criar uma aplicação que importe Baileys, usando `Example/example.ts` como referência, sem alterar o núcleo do protocolo sem necessidade.
 
+Para iniciar a API Termux, siga o passo a passo em [`termux-api/README.md`](termux-api/README.md). Ela expõe status, grupos, contatos, mensagens recentes/selecionadas e operações; oferece filtros e exportação. Por padrão, só aceita chamadas locais em `127.0.0.1` e exige token em todas as rotas `/api/`. Mensagens recebidas ficam em RAM por até 15 minutos e só são persistidas quando selecionadas; isso pode ser desativado com `RECENT_MESSAGES_MAX=0`.
+
 ## Observações sobre esta cópia
 
 - Verificado em 21/10/2026: instalação com Yarn 4.9.2, `yarn build` e `yarn lint` concluídos. O lint terminou com 103 avisos preexistentes e nenhum erro.
-- Os testes unitários e de integração passaram: 28 suítes e 407 testes. Testes e2e e conexão real com WhatsApp não foram executados.
+- Antes da implementação da camada Termux, os testes unitários e de integração do núcleo passaram: 28 suítes e 407 testes. Esses resultados não cobrem a API nova; testes e2e e conexão real com WhatsApp não foram executados.
+- A camada Termux requer Node.js 20+, Yarn para compilar o núcleo e npm para instalar `sql.js` e `qrcode-terminal`. A verificação sintática do Node e a checagem do diff foram concluídas; a conexão real e a operação no Android precisam ser confirmadas no próprio Termux.
 - A licença MIT original foi preservada em `LICENSE`.
 - A versão 7 traz mudanças de API em relação à 6; consulte o `README.md` e o [guia de migração](https://whiskey.so/migrate-latest).
 - O `origin` aponta para o repositório público original. A branch `minha-versao` é local; nenhum repositório remoto pessoal foi criado ou publicado.
