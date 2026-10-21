@@ -62,5 +62,5 @@ Para iniciar a API Termux, siga o passo a passo em [`termux-api/README.md`](term
 - A camada Termux requer Node.js 20+, Yarn para compilar o núcleo e npm para instalar `sql.js` e `qrcode-terminal`. A verificação sintática do Node e a checagem do diff foram concluídas; a conexão real e a operação no Android precisam ser confirmadas no próprio Termux.
 - A licença MIT original foi preservada em `LICENSE`.
 - A versão 7 traz mudanças de API em relação à 6; consulte o `README.md` e o [guia de migração](https://whiskey.so/migrate-latest).
-- O `origin` aponta para o repositório público original. A branch `minha-versao` é local; nenhum repositório remoto pessoal foi criado ou publicado.
+- O remoto `origin` continua apontando para o repositório público original. A branch local `minha-versao` acompanha a branch `main` publicada em [AlexandroLeone/Baileys-Termux](https://github.com/AlexandroLeone/Baileys-Termux).
 - O projeto usa um protocolo não oficial do WhatsApp Web. A conexão real depende do serviço externo e de uma conta autorizada.
